@@ -32,7 +32,7 @@ mkdir -p $repackage_dir/bin
 # Copy libvips-cpp-42.dll by default
 target_dll="libvips-cpp-42.dll"
 
-zip_suffix=""
+zip_suffix="-threadpool-reuse"
 
 if [ "$type" = "static" ]; then
   # Static build? Copy libvips-42.dll
@@ -112,6 +112,6 @@ cp $mxe_dir/vips-packaging/{AUTHORS,ChangeLog,COPYING,README.md,versions.json} $
 
 echo "Creating $zipfile"
 
-zipfile=$vips_package-dev-$arch-$deps-$vips_version.$vips_patch_version$zip_suffix.zip
+zipfile=$vips_package-dev-$arch-$deps$zip_suffix.zip
 rm -f $zipfile
 zip -r -qq $zipfile $repackage_dir

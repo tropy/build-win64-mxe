@@ -2,12 +2,11 @@ PKG             := vips-all
 $(PKG)_WEBSITE  := https://libvips.github.io/libvips/
 $(PKG)_DESCR    := A fast image processing library with low memory needs.
 $(PKG)_IGNORE   :=
-$(PKG)_VERSION  := 8.9.1
-$(PKG)_CHECKSUM := 45633798877839005016c9d3494e98dee065f5cb9e20f4552d3b315b8e8bce91
+# https://api.github.com/repos/kleisauke/libvips/tarball/ad1ea3cda94aa74aea053e0f08af08d447f1b005
+$(PKG)_VERSION  := ad1ea3c
+$(PKG)_CHECKSUM := ab015d3c08c614253c2d5c6596bbaa2047d44c7afaabeba52aaa2e268e45c494
 $(PKG)_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/vips-[0-9]*.patch)))
-$(PKG)_GH_CONF  := libvips/libvips/releases,v
-$(PKG)_SUBDIR   := vips-$($(PKG)_VERSION)
-$(PKG)_FILE     := vips-$($(PKG)_VERSION).tar.gz
+$(PKG)_GH_CONF  := kleisauke/libvips/branches/threadpool-reuse
 $(PKG)_DEPS     := cc matio libwebp librsvg giflib poppler glib pango fftw \
                    libgsf libjpeg-turbo tiff openslide lcms libexif libheif \
                    imagemagick libpng openexr cfitsio nifticlib orc
@@ -64,7 +63,10 @@ endef
 
 define $(PKG)_BUILD
     $($(PKG)_PRE_CONFIGURE)
-    cd '$(BUILD_DIR)' && $(SOURCE_DIR)/configure \
+
+    $(SED) -i 's/$$\*/"$$@"/g' '$(SOURCE_DIR)/autogen.sh'
+
+    cd '$(SOURCE_DIR)' && ./autogen.sh \
         $(MXE_CONFIGURE_OPTS) \
         --enable-debug=no \
         --without-pdfium \
@@ -75,8 +77,8 @@ define $(PKG)_BUILD
     # remove -nostdlib from linker commandline options
     # https://debbugs.gnu.org/cgi/bugreport.cgi?bug=27866
     $(if $(findstring posix,$(TARGET)), \
-        $(SED) -i '/^archive_cmds=/s/\-nostdlib//g' '$(BUILD_DIR)/libtool')
+        $(SED) -i '/^archive_cmds=/s/\-nostdlib//g' '$(SOURCE_DIR)/libtool')
 
-    $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
-    $(MAKE) -C '$(BUILD_DIR)' -j 1 install
+    $(MAKE) -C '$(SOURCE_DIR)' -j '$(JOBS)'
+    $(MAKE) -C '$(SOURCE_DIR)' -j 1 install
 endef
