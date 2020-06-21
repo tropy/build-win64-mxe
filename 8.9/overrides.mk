@@ -561,7 +561,7 @@ define librsvg_BUILD
         $(if $(IS_INTL_DUMMY), \
             LIBS="-lintl" \
             CFLAGS="$(CFLAGS) -DG_INTL_STATIC_COMPILATION" \
-            lt_cv_deplibs_check_method="pass_all")
+            $(if $(BUILD_SHARED), lt_cv_deplibs_check_method="pass_all"))
 
     $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
     $(MAKE) -C '$(BUILD_DIR)' -j 1 $(INSTALL_STRIP_LIB)
@@ -690,8 +690,9 @@ define cairo_BUILD
         --enable-fc \
         --enable-ft \
         --without-x \
-        CFLAGS="$(CFLAGS) $(if $(BUILD_STATIC),-DCAIRO_WIN32_STATIC_BUILD)" \
-        $(if $(findstring win32,$(TARGET)), ax_cv_c_float_words_bigendian=no)
+        CFLAGS="$(CFLAGS) $(if $(BUILD_STATIC),-DCAIRO_WIN32_STATIC_BUILD) $(if $(IS_INTL_DUMMY),-DG_INTL_STATIC_COMPILATION)" \
+        $(if $(findstring win32,$(TARGET)), ax_cv_c_float_words_bigendian=no) \
+        $(if $(IS_INTL_DUMMY), $(if $(BUILD_STATIC), LIBS="-lintl"))
 
     $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
     $(MAKE) -C '$(BUILD_DIR)' -j 1 install $(MXE_DISABLE_PROGRAMS)
@@ -739,14 +740,7 @@ define glib_BUILD
     ln -sf '$(PREFIX)/$(BUILD)/bin/glib-compile-schemas'   '$(PREFIX)/$(TARGET)/bin/'
     ln -sf '$(PREFIX)/$(BUILD)/bin/glib-compile-resources' '$(PREFIX)/$(TARGET)/bin/'
 
-    $(if $(BUILD_STATIC), \
-        (cd '$(SOURCE_DIR)' && $(PATCH) -p1 -u) < $(realpath $(dir $(lastword $(glib_PATCHES))))/glib-static.patch)
-
-    # cross build
-    # build as shared library, since we need `libgobject-2.0-0.dll`
-    # and `libglib-2.0-0.dll` for the language bindings.
     '$(TARGET)-meson' \
-        --default-library=shared \
         --buildtype=release \
         --strip \
         --libdir='lib' \
@@ -764,8 +758,9 @@ define glib_BUILD
     ninja -C '$(BUILD_DIR)' install
 
     # remove static dummy dependency from pc file
-    $(if $(IS_INTL_DUMMY), \
-        $(SED) -i '/^Libs:/s/\-lintl//g' '$(PREFIX)/$(TARGET)/lib/pkgconfig/glib-2.0.pc')
+    $(if $(BUILD_SHARED), \
+        $(if $(IS_INTL_DUMMY), \
+            $(SED) -i '/^Libs:/s/\-lintl//g' '$(PREFIX)/$(TARGET)/lib/pkgconfig/glib-2.0.pc'))
 endef
 
 # build with CMake.

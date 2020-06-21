@@ -5,7 +5,7 @@ Contains ad hoc patches for cross building.
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: James Le Cuirot <chewi@gentoo.org>
 Date: Mon, 13 Apr 2020 14:51:18 +0100
-Subject: [PATCH 1/6] meson: Remove transitive dep workaround now we require
+Subject: [PATCH 1/8] meson: Remove transitive dep workaround now we require
  newer Meson
 
 https://github.com/mesonbuild/meson/issues/1426 was fixed in 0.48.0
@@ -29,7 +29,7 @@ index 1111111..2222222 100644
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Martin=20Storsj=C3=B6?= <martin@martin.st>
 Date: Sat, 25 Apr 2020 21:10:15 +0300
-Subject: [PATCH 2/6] meson: Fix the gnulib checks for isnan* functions
+Subject: [PATCH 2/8] meson: Fix the gnulib checks for isnan* functions
 
 The gnulib math code uses __builtin_isnanf and __builtin_isnanl
 within the __GNUC__ >= 4 ifdef, and clang doesn't provide those
@@ -109,7 +109,7 @@ index 1111111..2222222 100644
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Martin=20Storsj=C3=B6?= <martin@martin.st>
 Date: Mon, 27 Apr 2020 21:59:47 +0300
-Subject: [PATCH 3/6] glib: Sync the local modification to glib/valgrind.h to what
+Subject: [PATCH 3/8] glib: Sync the local modification to glib/valgrind.h to what
  was upstreamed
 
 The local change from af0e0cb9950569828 in glib ended upstreamed
@@ -139,7 +139,7 @@ index 1111111..2222222 100644
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Martin=20Storsj=C3=B6?= <martin@martin.st>
 Date: Tue, 31 Mar 2020 23:11:05 +0300
-Subject: [PATCH 4/6] Don't fall back to raise(SIGTRAP) on Windows
+Subject: [PATCH 4/8] Don't fall back to raise(SIGTRAP) on Windows
 
 When targeting mingw on architectures other than x86, the earlier cases
 don't apply, and the final fallback, raise(SIGTRAP) isn't usable there.
@@ -165,7 +165,7 @@ index 1111111..2222222 100644
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Timm=20B=C3=A4der?= <mail@baedert.org>
 Date: Fri, 28 Feb 2020 08:59:23 +0100
-Subject: [PATCH 5/6] macros: Define G_GNUC_FALLTHROUGH for more compilers
+Subject: [PATCH 5/8] macros: Define G_GNUC_FALLTHROUGH for more compilers
 
 Some compilers have __GNUC__ defined as a value less than 6, but do
 support implicit-fallthrough via __attribute__((fallthrough)). Define
@@ -193,11 +193,303 @@ index 1111111..2222222 100644
  #else
  #define G_GNUC_FALLTHROUGH
  #endif /* __GNUC__ */
+ 
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nirbheek Chauhan <nirbheek@centricular.com>
+Date: Sun, 12 Jan 2020 20:40:17 -0500
+Subject: [PATCH 6/8] glib-init: Prefer constructors, only define DLLMain for
+ DLLs
+
+gcc-2.7+ and msvc support C constructors/destructors, so we should
+prefer them over DLLMain for initialization/deinitialization on Windows.
+Especially since DLLMain will only work with DLLs and hence will never
+work if one statically links GLib on Windows.
+
+The threading/locking initialization for Windows also needs to happen
+during gobject initialization because the order in which constructors
+are called is not guaranteed, and the gobject initctor needs working
+locking. Hence, we make g_thread_win32_init() idempotent so it can be
+called multiple times, and call it from both the gobject init
+constructor and the glib init constructor.
+
+An alternative is to implement ordering for constructors, but that's
+non-trivial since the way in which ordering must be implemented for gcc,
+msvc, and the SUN compiler are different.
+
+diff --git a/glib/glib-init.c b/glib/glib-init.c
+index 1111111..2222222 100644
+--- a/glib/glib-init.c
++++ b/glib/glib-init.c
+@@ -271,54 +271,30 @@ glib_init (void)
+ 
+ #if defined (G_OS_WIN32)
+ 
++/* DLLMain should only be defined for DLLs on Windows */
++HMODULE glib_dll = NULL;
++
++#if defined (DLL_EXPORT)
++
+ BOOL WINAPI DllMain (HINSTANCE hinstDLL,
+                      DWORD     fdwReason,
+                      LPVOID    lpvReserved);
+ 
+-HMODULE glib_dll;
+-
+ BOOL WINAPI
+ DllMain (HINSTANCE hinstDLL,
+          DWORD     fdwReason,
+          LPVOID    lpvReserved)
+ {
+-  switch (fdwReason)
+-    {
+-    case DLL_PROCESS_ATTACH:
++    if (fdwReason == DLL_PROCESS_ATTACH)
+       glib_dll = hinstDLL;
+-      g_crash_handler_win32_init ();
+-      g_clock_win32_init ();
+-#ifdef THREADS_WIN32
+-      g_thread_win32_init ();
+-#endif
+-      glib_init ();
+-      /* must go after glib_init */
+-      g_console_win32_init ();
+-      break;
+-
+-    case DLL_THREAD_DETACH:
+-#ifdef THREADS_WIN32
+-      g_thread_win32_thread_detach ();
+-#endif
+-      break;
+-
+-    case DLL_PROCESS_DETACH:
+-#ifdef THREADS_WIN32
+-      if (lpvReserved == NULL)
+-        g_thread_win32_process_detach ();
+-#endif
+-      g_crash_handler_win32_deinit ();
+-      break;
+-
+-    default:
+-      /* do nothing */
+-      ;
+-    }
+ 
+   return TRUE;
+ }
+ 
+-#elif defined (G_HAS_CONSTRUCTORS)
++#endif /* defined (DLL_EXPORT) */
++#endif /* defined (G_OS_WIN32) */
++
++#if defined (G_HAS_CONSTRUCTORS)
+ 
+ #ifdef G_DEFINE_CONSTRUCTOR_NEEDS_PRAGMA
+ #pragma G_DEFINE_CONSTRUCTOR_PRAGMA_ARGS(glib_init_ctor)
+@@ -328,9 +304,35 @@ G_DEFINE_CONSTRUCTOR(glib_init_ctor)
+ static void
+ glib_init_ctor (void)
+ {
++#if defined (G_OS_WIN32)
++  g_crash_handler_win32_init ();
++  g_clock_win32_init ();
++#ifdef THREADS_WIN32
++  g_thread_win32_init ();
++#endif /* defined (THREADS_WIN32) */
++#endif /* defined (G_OS_WIN32) */
+   glib_init ();
++#if defined (G_OS_WIN32)
++  /* must go after glib_init */
++  g_console_win32_init ();
++#endif /* defined (G_OS_WIN32) */
+ }
+ 
++#ifdef G_DEFINE_DESTRUCTOR_NEEDS_PRAGMA
++#pragma G_DEFINE_DESTRUCTOR_PRAGMA_ARGS(glib_deinit_ctor)
++#endif
++G_DEFINE_DESTRUCTOR(glib_deinit_ctor)
++
++static void
++glib_deinit_ctor (void)
++{
++#if defined (G_OS_WIN32) && defined (THREADS_WIN32)
++  g_thread_win32_thread_detach ();
++#endif /* G_OS_WIN32 && THREADS_WIN32 */
++}
++
++
++
+ #else
+ # error Your platform/compiler is missing constructor support
+ #endif
+diff --git a/glib/gthread-win32.c b/glib/gthread-win32.c
+index 1111111..2222222 100644
+--- a/glib/gthread-win32.c
++++ b/glib/gthread-win32.c
+@@ -606,6 +606,12 @@ g_system_thread_set_name (const gchar *name)
+ void
+ g_thread_win32_init (void)
+ {
++  static gboolean threads_inited;
++
++  if (threads_inited)
++    /* Already inited */
++    return;
++
+   InitializeCriticalSection (&g_private_lock);
+ 
+ #ifndef _MSC_VER
+@@ -615,6 +621,7 @@ g_thread_win32_init (void)
+       /* This is bad, but what can we do? */
+     }
+ #endif
++  threads_inited = TRUE;
+ }
+ 
+ void
+diff --git a/gobject/gtype.c b/gobject/gtype.c
+index 1111111..2222222 100644
+--- a/gobject/gtype.c
++++ b/gobject/gtype.c
+@@ -32,6 +32,7 @@
+ #include "gobject_trace.h"
+ 
+ #include "glib-private.h"
++#include "glib-init.h"
+ #include "gconstructor.h"
+ 
+ #ifdef G_OS_WIN32
+@@ -4369,6 +4370,15 @@ gobject_init (void)
+   TypeNode *node;
+   GType type G_GNUC_UNUSED  /* when compiling with G_DISABLE_ASSERT */;
+ 
++  /* In addition to glib-init.c, also init win32-specific threading/locking
++   * primitives right before we first make use of them. gconstructor.h does not
++   * guarantee the order in which constructors are called, but it's fine to call
++   * this multiple times since it'll be a no-op. Since gobject-2.0 needs
++   * glib-2.0, this will always be de-inited correctly. */
++#if defined (G_OS_WIN32) && defined (THREADS_WIN32) && !defined(DLL_EXPORT)
++  g_thread_win32_init ();
++#endif /* G_OS_WIN32 && THREADS_WIN32 && !DLL_EXPORT */
++
+   /* Ensure GLib is initialized first, see
+    * https://bugzilla.gnome.org/show_bug.cgi?id=756139
+    */
+@@ -4456,7 +4466,7 @@ gobject_init (void)
+   _g_signal_init ();
+ }
+ 
+-#if defined (G_OS_WIN32)
++#if defined (G_OS_WIN32) && defined (DLL_EXPORT)
+ 
+ BOOL WINAPI DllMain (HINSTANCE hinstDLL,
+                      DWORD     fdwReason,
+@@ -4481,7 +4491,9 @@ DllMain (HINSTANCE hinstDLL,
+   return TRUE;
+ }
+ 
+-#elif defined (G_HAS_CONSTRUCTORS)
++#endif
++
++#if defined (G_HAS_CONSTRUCTORS)
+ #ifdef G_DEFINE_CONSTRUCTOR_NEEDS_PRAGMA
+ #pragma G_DEFINE_CONSTRUCTOR_PRAGMA_ARGS(gobject_init_ctor)
+ #endif
+
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kleis Auke Wolthuizen <github@kleisauke.nl>
+Date: Fri, 19 Jun 2020 13:30:00 +0200
+Subject: [PATCH 7/8] Add win32 TLS destructor
+
+See: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1454
+
+diff --git a/glib/glib-init.c b/glib/glib-init.c
+index 1111111..2222222 100644
+--- a/glib/glib-init.c
++++ b/glib/glib-init.c
+@@ -270,11 +270,41 @@ glib_init (void)
+ }
+ 
+ #if defined (G_OS_WIN32)
++static void WINAPI
++g_win32_tls_deinit_dtor (HANDLE module, DWORD fdwReason, LPVOID lpreserved)
++{
++  switch (fdwReason)
++    {
++    case DLL_PROCESS_DETACH:
++    case DLL_THREAD_DETACH:
++#ifdef THREADS_WIN32
++      g_thread_win32_thread_detach ();
++#endif
++      break;
++    }
++}
++#ifdef _MSC_VER
++// This symbol (or __tls_used on x86_32) is defined by the MS CRT startup code
++// that's static linked into all executables using the MS CRT (it's in the import library of
++// the dll flavors as well), and it ends up referenced when you use c++ dynamic initialization
++// on a thread_local variable, we reference it explicitly here to cause the linker to
++// actually go and generate the PE header pointing to the TLS data directory.
++#ifdef _M_IX86
++__pragma (comment (linker, "/include:__tls_used"))
++#else
++__pragma (comment (linker, "/include:_tls_used"))
++#endif
++    __pragma (section (".CRT$XLG", read));
++    static __declspec(allocate (".CRT$XLG")) void (__stdcall *win32_xlg_dtor) (void *, unsigned long, void *) = g_win32_tls_deinit_dtor;
++#else
++// GCC doesn't seem to require us to coax it into emitting the TLS directory.
++static __attribute__ ((section (".CRT$XLG"), used)) void (__stdcall *win32_xlg_dtor) (void*, unsigned long, void*) = g_win32_tls_deinit_dtor;
++#endif
+ 
+ /* DLLMain should only be defined for DLLs on Windows */
+ HMODULE glib_dll = NULL;
+ 
+-#if defined (DLL_EXPORT)
++#if !defined (GLIB_STATIC_COMPILATION)
+ 
+ BOOL WINAPI DllMain (HINSTANCE hinstDLL,
+                      DWORD     fdwReason,
+@@ -291,7 +321,7 @@ DllMain (HINSTANCE hinstDLL,
+   return TRUE;
+ }
+ 
+-#endif /* defined (DLL_EXPORT) */
++#endif /* !defined (GLIB_STATIC_COMPILATION) */
+ #endif /* defined (G_OS_WIN32) */
+ 
+ #if defined (G_HAS_CONSTRUCTORS)
+@@ -327,12 +357,10 @@ static void
+ glib_deinit_ctor (void)
+ {
+ #if defined (G_OS_WIN32) && defined (THREADS_WIN32)
+-  g_thread_win32_thread_detach ();
++  g_thread_win32_process_detach ();
+ #endif /* G_OS_WIN32 && THREADS_WIN32 */
+ }
+ 
+-
+-
+ #else
+ # error Your platform/compiler is missing constructor support
+ #endif
+diff --git a/gobject/gtype.c b/gobject/gtype.c
+index 1111111..2222222 100644
+--- a/gobject/gtype.c
++++ b/gobject/gtype.c
+@@ -4466,7 +4466,7 @@ gobject_init (void)
+   _g_signal_init ();
+ }
+ 
+-#if defined (G_OS_WIN32) && defined (DLL_EXPORT)
++#if defined (G_OS_WIN32) && !defined (GOBJECT_STATIC_COMPILATION)
+ 
+ BOOL WINAPI DllMain (HINSTANCE hinstDLL,
+                      DWORD     fdwReason,
 
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kleis Auke Wolthuizen <github@kleisauke.nl>
 Date: Mon, 13 May 2019 18:00:00 +0200
-Subject: [PATCH 6/6] Disable some tests
+Subject: [PATCH 8/8] Disable some tests
 
 
 diff --git a/gio/tests/meson.build b/gio/tests/meson.build
