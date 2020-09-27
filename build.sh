@@ -23,8 +23,8 @@ ARCH:
 	Possible values are:
 	    - x86_64
 	    - i686
-	    - aarch64
-	    - armv7
+	    - aarch64 (implies --with-llvm)
+	    - armv7 (implies --with-llvm)
 
 TYPE:
 	Specifies the type of binary to be created,
