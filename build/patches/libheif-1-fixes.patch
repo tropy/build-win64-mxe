@@ -1,42 +1,41 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kleis Auke Wolthuizen <github@kleisauke.nl>
-Date: Tue, 6 Oct 2020 14:55:00 +0200
-Subject: [PATCH 1/1] Improve aom encode error reporting
+Date: Tue, 1 Dec 2020 12:30:47 +0100
+Subject: [PATCH 1/3] Improve aom encode error reporting
 
-Upstream-Status: Pending
+Upstream-Status: Submitted [https://github.com/strukturag/libheif/pull/385]
 
 diff --git a/libheif/heif_encoder_aom.cc b/libheif/heif_encoder_aom.cc
 index 1111111..2222222 100644
 --- a/libheif/heif_encoder_aom.cc
 +++ b/libheif/heif_encoder_aom.cc
-@@ -79,6 +79,10 @@ static const char* const kParam_tune_valid_values[] = {
-     "psnr", "ssim"
+@@ -28,7 +28,6 @@
+ #endif
+ 
+ #include <cstring>
+-#include <cstdio>
+ #include <cassert>
+ #include <vector>
+ 
+@@ -36,9 +35,6 @@
+ #include <aom/aomcx.h>
+ 
+ 
+-#include <iostream>  // TODO: remove me
+-
+-
+ struct encoder_struct_aom
+ {
+   // --- parameters
+@@ -62,6 +58,7 @@ struct encoder_struct_aom
  };
  
-+static struct heif_error heif_error_codec_library_error = {heif_error_Encoder_plugin_error,
-+                                                           heif_suberror_Unspecified,
-+                                                           "aom error"};
-+
- static const int AOM_PLUGIN_PRIORITY = 40;
+ static const char* kError_out_of_memory = "Out of memory";
++static const char* kError_encode_frame = "Failed to encode frame";
  
- #define MAX_PLUGIN_NAME_LENGTH 80
-@@ -226,6 +230,15 @@ static void aom_init_plugin()
-   aom_init_parameters();
- }
- 
-+static void aom_log_error(aom_codec_ctx_t *ctx, const char *s)
-+{
-+  const char *detail = aom_codec_error_detail(ctx);
-+
-+  printf("%s: %s\n", s, aom_codec_error(ctx));
-+  if (detail) {
-+    printf("    %s\n", detail);
-+  }
-+}
- 
- static void aom_cleanup_plugin()
- {
-@@ -527,9 +540,8 @@ void aom_query_encoded_size(void* encoder, uint32_t input_width, uint32_t input_
+ static const char* kParam_min_q = "min-q";
+ static const char* kParam_max_q = "max-q";
+@@ -527,9 +524,8 @@ void aom_query_encoded_size(void* encoder, uint32_t input_width, uint32_t input_
  
  
  // TODO: encode as still frame (seq header)
@@ -48,14 +47,18 @@ index 1111111..2222222 100644
    //aom_codec_iter_t iter = NULL;
    int frame_index = 0; // only encoding a single frame
    int flags = 0; // no flags
-@@ -537,11 +549,11 @@ static int encode_frame(aom_codec_ctx_t* codec, aom_image_t* img)
+@@ -537,11 +533,15 @@ static int encode_frame(aom_codec_ctx_t* codec, aom_image_t* img)
    //const aom_codec_cx_pkt_t *pkt = NULL;
    const aom_codec_err_t res = aom_codec_encode(codec, img, frame_index, 1, flags);
    if (res != AOM_CODEC_OK) {
 -    printf("Failed to encode frame\n");
 -    assert(0);
-+    aom_log_error(codec, "Failed to encode frame");
-+    return heif_error_codec_library_error;
++    struct heif_error err = {
++        heif_error_Encoder_plugin_error,
++        heif_suberror_Unspecified,
++        kError_encode_frame
++    };
++    return err;
    }
  
 -  return got_pkts;
@@ -63,7 +66,7 @@ index 1111111..2222222 100644
  }
  
  
-@@ -550,6 +562,8 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -550,6 +550,8 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
  {
    struct encoder_struct_aom* encoder = (struct encoder_struct_aom*) encoder_raw;
  
@@ -72,7 +75,7 @@ index 1111111..2222222 100644
    // --- round image size to minimum size
  
    uint32_t rounded_width, rounded_height;
-@@ -561,11 +575,9 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -561,11 +563,9 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
  
    bool success = image->image->extend_to_size(rounded_width, rounded_height);
    if (!success) {
@@ -87,40 +90,45 @@ index 1111111..2222222 100644
      return err;
    }
  
-@@ -607,8 +619,10 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -606,9 +606,10 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+ 
    if (!aom_img_alloc(&input_image, img_format,
                       source_width, source_height, 1)) {
-     printf("Failed to allocate image.\n");
+-    printf("Failed to allocate image.\n");
 -    assert(false);
 -    // TODO
 +    err = {heif_error_Memory_allocation_error,
 +           heif_suberror_Unspecified,
-+           kError_out_of_memory};
++           "Failed to allocate image"};
 +    return err;
    }
  
  
-@@ -673,9 +687,8 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -673,9 +674,10 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
    iface = aom_codec_av1_cx();
    //encoder->encoder = get_aom_encoder_by_name("av1");
    if (!iface) {
 -    printf("Unsupported codec.");
 -    assert(false);
 -    // TODO
-+    printf("Unsupported codec: %s\n", aom_codec_iface_name(iface));
-+    return heif_error_codec_library_error;
++    err = {heif_error_Unsupported_feature,
++           heif_suberror_Unsupported_codec,
++           "Unsupported codec: AOMedia Project AV1 Encoder"};
++    return err;
    }
  
  
-@@ -688,13 +701,12 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -688,13 +690,14 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
    aom_codec_enc_cfg_t cfg;
    aom_codec_err_t res = aom_codec_enc_config_default(iface, &cfg, aomUsage);
    if (res) {
 -    printf("Failed to get default codec config.\n");
 -    assert(0);
 -    // TODO
-+    printf("Failed to get default codec config: %s\n", aom_codec_err_to_string(res));
-+    return heif_error_codec_library_error;
++    err = {heif_error_Encoder_plugin_error,
++           heif_suberror_Unspecified,
++           "Failed to get default codec config"};
++    return err;
    }
  
    heif::Box_av1C::configuration inout_config;
@@ -129,19 +137,21 @@ index 1111111..2222222 100644
  
    cfg.g_w = source_width;
    cfg.g_h = source_height;
-@@ -721,9 +733,8 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -721,9 +724,10 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
    }
  
    if (aom_codec_enc_init(&codec, iface, &cfg, encoder_flags)) {
 -    printf("Failed to initialize encoder\n");
 -    assert(0);
 -    // TODO
-+    aom_log_error(&codec, "Failed to initialize encoder");
-+    return heif_error_codec_library_error;
++    err = {heif_error_Encoder_plugin_error,
++           heif_suberror_Unspecified,
++           "Failed to initialize encoder"};
++    return err;
    }
  
    aom_codec_control(&codec, AOME_SET_CPUUSED, encoder->cpu_used);
-@@ -757,13 +768,16 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -757,13 +761,18 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
  
    // --- encode frame
  
@@ -156,20 +166,114 @@ index 1111111..2222222 100644
    if (res != AOM_CODEC_OK) {
 -    printf("Failed to encode frame\n");
 -    assert(0);
-+    aom_log_error(&codec, "Failed to encode frame");
-+    return heif_error_codec_library_error;
++    err = {heif_error_Encoder_plugin_error,
++           heif_suberror_Unspecified,
++           kError_encode_frame};
++    return err;
    }
  
    encoder->compressedData.clear();
-@@ -798,9 +812,8 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
+@@ -798,9 +807,10 @@ struct heif_error aom_encode_image(void* encoder_raw, const struct heif_image* i
    aom_img_free(&input_image);
  
    if (aom_codec_destroy(&codec)) {
 -    printf("Failed to destroy codec.\n");
 -    assert(0);
 -    // TODO
-+    aom_log_error(&codec, "Failed to destroy codec");
-+    return heif_error_codec_library_error;
++    err = {heif_error_Encoder_plugin_error,
++           heif_suberror_Unspecified,
++           "Failed to destroy codec"};
++    return err;
    }
  
    return heif_error_ok;
+
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lovell Fuller <github@lovell.info>
+Date: Sat, 31 Oct 2020 15:41:05 +0000
+Subject: [PATCH 2/3] Ensure box clap values are sanitised
+
+Prevents possible integer overflows and floating point exceptions
+
+Upstream-Status: Accepted [https://github.com/strukturag/libheif/commit/45503a7e12d5b3bcb4abf5c75bf8074a4dbc379c]
+
+diff --git a/libheif/box.cc b/libheif/box.cc
+index 1111111..2222222 100644
+--- a/libheif/box.cc
++++ b/libheif/box.cc
+@@ -2260,14 +2260,20 @@ Error Box_clap::parse(BitstreamRange& range)
+ {
+   //parse_full_box_header(range);
+ 
+-  m_clean_aperture_width.numerator = range.read32();
+-  m_clean_aperture_width.denominator = range.read32();
+-  m_clean_aperture_height.numerator = range.read32();
+-  m_clean_aperture_height.denominator = range.read32();
+-  m_horizontal_offset.numerator = range.read32();
+-  m_horizontal_offset.denominator = range.read32();
+-  m_vertical_offset.numerator = range.read32();
+-  m_vertical_offset.denominator = range.read32();
++  int32_t clean_aperture_width_num = range.read32();
++  int32_t clean_aperture_width_den = range.read32();
++  int32_t clean_aperture_height_num = range.read32();
++  int32_t clean_aperture_height_den = range.read32();
++  int32_t horizontal_offset_num = range.read32();
++  int32_t horizontal_offset_den = range.read32();
++  int32_t vertical_offset_num = range.read32();
++  int32_t vertical_offset_den = range.read32();
++  m_clean_aperture_width = Fraction(clean_aperture_width_num,
++                                    clean_aperture_width_den);
++  m_clean_aperture_height = Fraction(clean_aperture_height_num,
++                                     clean_aperture_height_den);
++  m_horizontal_offset = Fraction(horizontal_offset_num, horizontal_offset_den);
++  m_vertical_offset = Fraction(vertical_offset_num, vertical_offset_den);
+   if (!m_clean_aperture_width.is_valid() || !m_clean_aperture_height.is_valid() ||
+       !m_horizontal_offset.is_valid() || !m_vertical_offset.is_valid()) {
+     return Error(heif_error_Invalid_input,
+
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dirk Farin <dirk.farin@gmail.com>
+Date: Thu, 12 Nov 2020 18:04:18 +0100
+Subject: [PATCH 3/3] remove software version comment from hdlr box as this is not
+ the right place (#356)
+
+Upstream-Status: Accepted [https://github.com/strukturag/libheif/commit/b3989b8f3573d73a149e787ba6246a02903d4c8b]
+
+diff --git a/libheif/heif_context.cc b/libheif/heif_context.cc
+index 1111111..2222222 100644
+--- a/libheif/heif_context.cc
++++ b/libheif/heif_context.cc
+@@ -1739,7 +1739,8 @@ Error HeifContext::encode_image(std::shared_ptr<HeifPixelImage> pixel_image,
+ 
+   m_heif_file->set_brand(encoder->plugin->compression_format);
+ 
+-  m_heif_file->set_hdlr_library_info(encoder->plugin->get_plugin_name());
++  // TODO: the hdlr box is not the right place for comments
++  // m_heif_file->set_hdlr_library_info(encoder->plugin->get_plugin_name());
+ 
+   switch (encoder->plugin->compression_format) {
+     case heif_compression_HEVC: {
+diff --git a/libheif/heif_file.cc b/libheif/heif_file.cc
+index 1111111..2222222 100644
+--- a/libheif/heif_file.cc
++++ b/libheif/heif_file.cc
+@@ -823,6 +823,7 @@ void HeifFile::set_color_profile(heif_item_id id, const std::shared_ptr<const co
+ }
+ 
+ 
++// TODO: the hdlr box is probably not the right place for this. Into which box should we write comments?
+ void HeifFile::set_hdlr_library_info(std::string encoder_plugin_version)
+ {
+   std::stringstream sstr;
+diff --git a/libheif/heif_file.h b/libheif/heif_file.h
+index 1111111..2222222 100644
+--- a/libheif/heif_file.h
++++ b/libheif/heif_file.h
+@@ -150,6 +150,7 @@ namespace heif {
+ 
+     void set_color_profile(heif_item_id id, const std::shared_ptr<const color_profile> profile);
+ 
++    // TODO: the hdlr box is probably not the right place for this. Into which box should we write comments?
+     void set_hdlr_library_info(std::string encoder_plugin_version);
+ 
+   private:

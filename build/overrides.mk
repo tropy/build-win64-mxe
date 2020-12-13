@@ -25,8 +25,8 @@ libffi_URL      := https://github.com/libffi/libffi/releases/download/v$(libffi_
 libffi_URL_2    := https://sourceware.org/pub/libffi/$(libffi_FILE)
 
 # upstream version is 2.32.3
-gdk-pixbuf_VERSION  := 2.40.0
-gdk-pixbuf_CHECKSUM := 1582595099537ca8ff3b99c6804350b4c058bb8ad67411bbaae024ee7cead4e6
+gdk-pixbuf_VERSION  := 2.42.2
+gdk-pixbuf_CHECKSUM := 83c66a1cfd591d7680c144d2922c5955d38b4db336d7cd3ee109f7bcf9afef15
 gdk-pixbuf_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/gdk-pixbuf-[0-9]*.patch)))
 gdk-pixbuf_SUBDIR   := gdk-pixbuf-$(gdk-pixbuf_VERSION)
 gdk-pixbuf_FILE     := gdk-pixbuf-$(gdk-pixbuf_VERSION).tar.xz
@@ -43,14 +43,14 @@ matio_FILE     := matio-$(matio_VERSION).tar.gz
 matio_URL      := https://github.com/tbeu/matio/releases/download/v$(matio_VERSION)/$(matio_FILE)
 
 # upstream version is 7, we want ImageMagick 6
-imagemagick_VERSION  := 6.9.11-35
-imagemagick_CHECKSUM := d96d4d5bf1722450c36808eb221c55304fe86c640d0eb62b9f54ade5acfad6e1
+imagemagick_VERSION  := 6.9.11-48
+imagemagick_CHECKSUM := ce19fb4eeddb64d63e5f16f5643b8d5f8772319207d1fc1a0f610ec9506cfcdf
 imagemagick_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/imagemagick-[0-9]*.patch)))
 imagemagick_GH_CONF  := ImageMagick/ImageMagick6/tags
 
 # upstream version is 2.40.5
-librsvg_VERSION  := 2.50.1
-librsvg_CHECKSUM := 9bd9799322e06cf5db19b9f7afb728edac6efcf0110baafc44f0f96f45df9a09
+librsvg_VERSION  := 2.50.2
+librsvg_CHECKSUM := 6211f271ce4cd44a7318190d36712e9cea384a933d3e3570004edeb210a056d3
 librsvg_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/librsvg-[0-9]*.patch)))
 librsvg_SUBDIR   := librsvg-$(librsvg_VERSION)
 librsvg_FILE     := librsvg-$(librsvg_VERSION).tar.xz
@@ -99,8 +99,8 @@ libgsf_FILE     := libgsf-$(libgsf_VERSION).tar.xz
 libgsf_URL      := https://download.gnome.org/sources/libgsf/$(call SHORT_PKG_VERSION,libgsf)/$(libgsf_FILE)
 
 # upstream version is 1.16.0
-cairo_VERSION  := 1.17.2
-cairo_CHECKSUM := 6b70d4655e2a47a22b101c666f4b29ba746eda4aa8a0f7255b32b2e9408801df
+cairo_VERSION  := 1.17.4
+cairo_CHECKSUM := 74b24c1ed436bbe87499179a3b27c43f4143b8676d8ad237a6fa787401959705
 cairo_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/cairo-[0-9]*.patch)))
 cairo_SUBDIR   := cairo-$(cairo_VERSION)
 cairo_FILE     := cairo-$(cairo_VERSION).tar.xz
@@ -144,8 +144,8 @@ pixman_FILE     := pixman-$(pixman_VERSION).tar.gz
 pixman_URL      := https://cairographics.org/releases/$(pixman_FILE)
 
 # upstream version is 2.13.1
-fontconfig_VERSION  := 2.13.92
-fontconfig_CHECKSUM := 506e61283878c1726550bc94f2af26168f1e9f2106eac77eaaf0b2cdfad66e4e
+fontconfig_VERSION  := 2.13.93
+fontconfig_CHECKSUM := ea968631eadc5739bc7c8856cef5c77da812d1f67b763f5e51b57b8026c1a0a0
 fontconfig_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/fontconfig-[0-9]*.patch)))
 fontconfig_SUBDIR   := fontconfig-$(fontconfig_VERSION)
 fontconfig_FILE     := fontconfig-$(fontconfig_VERSION).tar.xz
@@ -159,13 +159,13 @@ hdf5_SUBDIR   := hdf5-$(hdf5_VERSION)
 hdf5_FILE     := hdf5-$(hdf5_VERSION).tar.bz2
 hdf5_URL      := https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-$(call SHORT_PKG_VERSION,hdf5)/hdf5-$(hdf5_VERSION)/src/$(hdf5_FILE)
 
-# upstream version is 20.10.0
-poppler_VERSION  := 20.11.0
-poppler_CHECKSUM := 021557074516492375c2bb4226a413aad431159e9177f9f14dff4159d2723b14
-poppler_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/poppler-[0-9]*.patch)))
-poppler_SUBDIR   := poppler-$(poppler_VERSION)
-poppler_FILE     := poppler-$(poppler_VERSION).tar.xz
-poppler_URL      := https://poppler.freedesktop.org/$(poppler_FILE)
+# upstream version is 3.3.8
+fftw_VERSION  := 3.3.9
+fftw_CHECKSUM := bf2c7ce40b04ae811af714deb512510cc2c17b9ab9d6ddcf49fe4487eea7af3d
+fftw_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/fftw-[0-9]*.patch)))
+fftw_SUBDIR   := fftw-$(fftw_VERSION)
+fftw_FILE     := fftw-$(fftw_VERSION).tar.gz
+fftw_URL      := http://www.fftw.org/$(fftw_FILE)
 
 # upstream version is 2.14.02
 nasm_VERSION  := 2.15.05
@@ -175,13 +175,15 @@ nasm_SUBDIR   := nasm-$(nasm_VERSION)
 nasm_FILE     := nasm-$(nasm_VERSION).tar.xz
 nasm_URL      := https://www.nasm.us/pub/nasm/releasebuilds/$(nasm_VERSION)/$(nasm_FILE)
 
-# upstream version is 7.0.0
-mingw-w64_VERSION  := 8.0.0
-mingw-w64_CHECKSUM := 44c740ea6ab3924bc3aa169bad11ad3c5766c5c8459e3126d44eabb8735a5762
+# upstream version is 8.0.0
+# Update MinGW-w64 to 829a2e2
+# https://github.com/mirror/mingw-w64/tarball/829a2e2a00abe0391f348a565a977bc66f67fd6a
+mingw-w64_VERSION  := 829a2e2
+mingw-w64_CHECKSUM := 6521b05028ea20cd452ed7becb235fe47d8362c3bc1cae1c45113cc77b26ae3b
 mingw-w64_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/mingw-w64-[0-9]*.patch)))
-mingw-w64_SUBDIR   := mingw-w64-v$(mingw-w64_VERSION)
-mingw-w64_FILE     := mingw-w64-v$(mingw-w64_VERSION).tar.bz2
-mingw-w64_URL      := https://$(SOURCEFORGE_MIRROR)/project/mingw-w64/mingw-w64/mingw-w64-release/$(mingw-w64_FILE)
+mingw-w64_SUBDIR   := mirror-mingw-w64-$(mingw-w64_VERSION)
+mingw-w64_FILE     := mirror-mingw-w64-$(mingw-w64_VERSION).tar.gz
+mingw-w64_URL      := https://github.com/mirror/mingw-w64/tarball/$(mingw-w64_VERSION)/$(mingw-w64_FILE)
 
 # upstream version is 2.28 (released on 2017-03-06)
 binutils_VERSION  := 2.35.1
@@ -195,8 +197,8 @@ binutils_URL_2    := https://ftpmirror.gnu.org/binutils/$(binutils_FILE)
 ## Patches that we override with our own
 
 libjpeg-turbo_PATCHES := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/libjpeg-turbo-[0-9]*.patch)))
+poppler_PATCHES := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/poppler-[0-9]*.patch)))
 libxml2_PATCHES := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/libxml2-[0-9]*.patch)))
-fftw_PATCHES := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/fftw-[0-9]*.patch)))
 
 # zlib will make libzlib.dll, but we want libz.dll so we must
 # patch CMakeLists.txt
@@ -347,13 +349,16 @@ define gettext_BUILD
 endef
 
 # disable version script on llvm-mingw
-# make the raw api unavailable when building a statically linked binary
+# disable struct support and make the raw api unavailable when
+# building a statically linked binary
 define libffi_BUILD
     # build and install the library
     cd '$(BUILD_DIR)' && $(SOURCE_DIR)/configure \
         $(MXE_CONFIGURE_OPTS) \
         --disable-multi-os-directory \
-        $(if $(BUILD_STATIC), --disable-raw-api) \
+        $(if $(BUILD_STATIC), \
+            --disable-structs \
+            --disable-raw-api) \
         $(if $(IS_LLVM), --disable-symvers)
 
     $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
@@ -432,8 +437,7 @@ define gdk-pixbuf_BUILD
         --libexecdir='bin' \
         --includedir='include' \
         -Dbuiltin_loaders='jpeg,png,tiff' \
-        -Dgir=false \
-        -Dx11=false \
+        -Dintrospection=disabled \
         $(if $(IS_INTL_DUMMY), -Dc_link_args='-lintl') \
         '$(SOURCE_DIR)' \
         '$(BUILD_DIR)'
