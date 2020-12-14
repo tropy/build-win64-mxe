@@ -13,8 +13,9 @@ OPTIONS:
 
 DEPS:
 	The group of dependencies to build libvips with,
-	    defaults to 'web'
+	    defaults to 'tropy'
 	Possible values are:
+	    - tropy
 	    - web
 	    - all
 
@@ -36,7 +37,7 @@ fi
 
 . variables.sh
 
-deps="${1:-web}"
+deps="${1:-tropy}"
 target="${2:-x86_64-w64-mingw32.shared}"
 
 if [[ "$target" == *.static* ]] && [ "$deps" = "all" ]; then

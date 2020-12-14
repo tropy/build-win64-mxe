@@ -10,8 +10,9 @@ OPTIONS:
 
 DEPS:
 	The group of dependencies to build libvips with,
-	    defaults to 'web'
+	    defaults to 'tropy'
 	Possible values are:
+	    - tropy
 	    - web
 	    - all
 
@@ -33,7 +34,7 @@ fi
 
 . variables.sh
 
-deps="${1:-web}"
+deps="${1:-tropy}"
 target="${2:-x86_64-w64-mingw32.shared}"
 arch="${target%%-*}"
 type="${target#*.}"
@@ -67,9 +68,9 @@ if [ "$FFI_COMPAT" = "true" ]; then
   zip_suffix+="-ffi"
 fi
 
-if [ "$HEVC" = "true" ]; then
-  zip_suffix+="-hevc"
-fi
+# if [ "$HEVC" = "true" ]; then
+#   zip_suffix+="-hevc"
+# fi
 
 if [ "$DEBUG" = "true" ]; then
   zip_suffix+="-debug"
@@ -202,7 +203,7 @@ fi
 
 echo "Copying packaging files"
 
-cp $install_dir/vips-packaging/{ChangeLog,LICENSE,README.md,versions.json} $repackage_dir
+cp $install_dir/vips-packaging/{ChangeLog,README.md,versions.json} $repackage_dir
 
 zipfile=$vips_package-dev-$arch-$deps-$vips_version${vips_patch_version:+.$vips_patch_version}$zip_suffix.zip
 

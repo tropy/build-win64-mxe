@@ -22,8 +22,9 @@ OPTIONS:
 
 DEPS:
 	The group of dependencies to build libvips with,
-	    defaults to 'web'
+	    defaults to 'tropy'
 	Possible values are:
+	    - tropy
 	    - web
 	    - all
 
@@ -57,7 +58,7 @@ git_ref=""
 tmpdir="/var/tmp/mxe"
 jpeg_impl="mozjpeg"
 with_ffi_compat=false
-with_hevc=false
+with_hevc=true
 with_debug=false
 with_llvm=true
 with_zlib_ng=true
@@ -92,7 +93,7 @@ done
 # Restore positional parameters
 set -- "${POSITIONAL[@]}"
 
-deps="${1:-web}"
+deps="${1:-tropy}"
 arch="${2:-x86_64}"
 type="${3:-shared}"
 
@@ -179,11 +180,9 @@ $oci_runtime pull docker.io/library/buildpack-deps:bullseye
 $oci_runtime build -t libvips-build-win-mxe container
 
 # Run build scripts inside a container with the:
-# - current UID and GID inherited
 # - build dir mounted at /data
 # - temporary dir mounted at /var/tmp
 $oci_runtime run --rm -t \
-  -u $(id -u):$(id -g) \
   -v $PWD/build:/data \
   -v $tmpdir:/var/tmp:z \
   -e "GIT_COMMIT=$git_commit" \
