@@ -20,8 +20,9 @@ OPTIONS:
 
 DEPS:
 	The group of dependencies to build libvips with,
-	    defaults to 'web'
+	    defaults to 'tropy'
 	Possible values are:
+	    - tropy
 	    - web
 	    - all
 
@@ -86,7 +87,7 @@ done
 # Restore positional parameters
 set -- "${POSITIONAL[@]}"
 
-deps="${1:-web}"
+deps="${1:-tropy}"
 arch="${2:-x86_64}"
 type="${3:-shared}"
 
