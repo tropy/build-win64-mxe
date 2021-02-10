@@ -2,14 +2,14 @@ PKG             := vips-tropy
 $(PKG)_WEBSITE  := https://libvips.github.io/libvips/
 $(PKG)_DESCR    := A fast image processing library with low memory needs.
 $(PKG)_IGNORE   :=
-$(PKG)_VERSION  := 8.10.2
-$(PKG)_CHECKSUM := c1d0d9cb54d75cd4f66dce787fbcac99f834f6621fbf47bce9e02ef65b4ab02a
+$(PKG)_VERSION  := 8.10.5
+$(PKG)_CHECKSUM := a4eef2f5334ab6dbf133cd3c6d6394d5bdb3e76d5ea4d578b02e1bc3d9e1cfd8
 $(PKG)_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/vips-[0-9]*.patch)))
 $(PKG)_GH_CONF  := libvips/libvips/releases,v
 $(PKG)_SUBDIR   := vips-$($(PKG)_VERSION)
 $(PKG)_FILE     := vips-$($(PKG)_VERSION).tar.gz
 $(PKG)_DEPS     := cc libwebp librsvg giflib poppler glib pango libgsf fftw \
-                   libjpeg-turbo tiff lcms libexif libheif \
+                   libjpeg-turbo tiff lcms libexif libde265 libheif \
                    imagemagick libpng libspng orc
 
 define $(PKG)_PRE_CONFIGURE
@@ -20,7 +20,7 @@ define $(PKG)_PRE_CONFIGURE
     (printf '{\n'; \
      printf '  "aom": "$(aom_VERSION)",\n'; \
      printf '  "cairo": "$(cairo_VERSION)",\n'; \
-     $(if $(IS_HEVC),printf '  "de265": "$(libde265_VERSION)"$(comma)\n';) \
+     printf '  "de265": "$(libde265_VERSION)",\n'; \
      printf '  "exif": "$(libexif_VERSION)",\n'; \
      printf '  "expat": "$(expat_VERSION)",\n'; \
      printf '  "ffi": "$(libffi_VERSION)",\n'; \
@@ -63,6 +63,14 @@ define $(PKG)_BUILD
         $(MXE_CONFIGURE_OPTS) \
         --enable-debug=no \
         --without-pdfium \
+        --without-openslide \
+        --without-cfitsio \
+        --without-OpenEXR \
+        --without-nifti \
+        --without-matio \
+        --without-ppm \
+        --without-analyze \
+        --without-radiance \
         --without-imagequant \
         --disable-introspection \
         --disable-deprecated
