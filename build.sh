@@ -134,15 +134,15 @@ if ! [ -x "$(command -v docker)" ]; then
 fi
 
 # Ensure latest Debian stable base image.
-sudo docker pull buildpack-deps:buster
+docker pull buildpack-deps:buster
 
 # Create a machine image with all the required build tools pre-installed.
-sudo docker build -t libvips-build-win-mxe container
+docker build -t libvips-build-win-mxe container
 
 # Run build scripts inside container
 # - inheriting the current uid and gid
 # - build dir mounted at /data
-sudo docker run --rm -t \
+docker run --rm -t \
   -u $(id -u):$(id -g) \
   -v $PWD/build:/data \
   -e "HEVC=$with_hevc" \
