@@ -140,10 +140,8 @@ docker pull buildpack-deps:buster
 docker build -t libvips-build-win-mxe container
 
 # Run build scripts inside container
-# - inheriting the current uid and gid
 # - build dir mounted at /data
 docker run --rm -t \
-  -u $(id -u):$(id -g) \
   -v $PWD/build:/data \
   -e "HEVC=$with_hevc" \
   -e "DEBUG=$with_debug" \
