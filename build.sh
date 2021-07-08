@@ -173,11 +173,9 @@ $oci_runtime pull buildpack-deps:bullseye
 $oci_runtime build -t libvips-build-win-mxe container
 
 # Run build scripts inside a container with the:
-# - current UID and GID inherited
 # - build dir mounted at /data
 # - temporary dir mounted at /var/tmp
 $oci_runtime run --rm -t \
-  -u $(id -u):$(id -g) \
   -v $PWD/build:/data \
   -v $tmpdir:/var/tmp:z \
   -e "GIT_COMMIT=$git_commit" \
