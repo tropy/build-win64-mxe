@@ -54,7 +54,7 @@ EOF
 git_commit=""
 git_ref=""
 tmpdir="/var/tmp/mxe"
-with_hevc=false
+with_hevc=true
 with_debug=false
 with_llvm=true
 with_mozjpeg=true

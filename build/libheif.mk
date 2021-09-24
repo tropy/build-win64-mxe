@@ -17,9 +17,8 @@ define $(PKG)_BUILD
         -DENABLE_PLUGIN_LOADING=0 \
         -DWITH_EXAMPLES=0 \
         $(if $(WIN32_THREADS), -DENABLE_MULTITHREADING_SUPPORT=0) \
-        $(if $(IS_HEVC),, \
-            -DWITH_LIBDE265=0 \
-            -DWITH_X265=0) \
+        $(if $(IS_HEVC),, -DWITH_LIBDE265=0) \
+        -DWITH_X265=0 \
         '$(SOURCE_DIR)'
     $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
     $(MAKE) -C '$(BUILD_DIR)' -j 1 $(subst -,/,$(INSTALL_STRIP_LIB))
