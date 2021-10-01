@@ -2,16 +2,15 @@ PKG             := vips-tropy
 $(PKG)_WEBSITE  := https://libvips.github.io/libvips/
 $(PKG)_DESCR    := A fast image processing library with low memory needs.
 $(PKG)_IGNORE   :=
-$(PKG)_VERSION  := 8.11.3
-$(PKG)_CHECKSUM := 9b0a1d2f477d6fb4298d383a61232bcb4b2ea91ab76a1113d31883b50f3cdf01
+$(PKG)_VERSION  := 8.13.3
+$(PKG)_CHECKSUM := 4eff5cdc8dbe1a05a926290a99014e20ba386f5dcca38d9774bef61413435d4c
 $(PKG)_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/vips-[0-9]*.patch)))
 $(PKG)_GH_CONF  := libvips/libvips/releases,v
 $(PKG)_SUBDIR   := vips-$($(PKG)_VERSION)
 $(PKG)_FILE     := vips-$($(PKG)_VERSION).tar.gz
-$(PKG)_DEPS     := cc libwebp librsvg glib pango libgsf \
+$(PKG)_DEPS     := cc meson-wrapper libwebp librsvg glib pango \
                    libjpeg-turbo tiff lcms libexif libheif libpng \
-                   libspng libimagequant orc \
-                   poppler fftw
+                   libspng libimagequant orc poppler cgif
 
 define $(PKG)_PRE_CONFIGURE
     # Copy some files to the packaging directory
@@ -21,22 +20,19 @@ define $(PKG)_PRE_CONFIGURE
 
     (printf '{\n'; \
      printf '  "aom": "$(aom_VERSION)",\n'; \
-     printf '  "brotli": "$(brotli_VERSION)",\n'; \
      printf '  "cairo": "$(cairo_VERSION)",\n'; \
+     printf '  "cgif": "$(cgif_VERSION)",\n'; \
      $(if $(IS_HEVC),printf '  "de265": "$(libde265_VERSION)"$(comma)\n';) \
      printf '  "exif": "$(libexif_VERSION)",\n'; \
      printf '  "expat": "$(expat_VERSION)",\n'; \
      printf '  "ffi": "$(libffi_VERSION)",\n'; \
-     printf '  "fftw": "$(fftw_VERSION)",\n'; \
      printf '  "fontconfig": "$(fontconfig_VERSION)",\n'; \
      printf '  "freetype": "$(freetype_VERSION)",\n'; \
      printf '  "fribidi": "$(fribidi_VERSION)",\n'; \
      printf '  "gdkpixbuf": "$(gdk-pixbuf_VERSION)",\n'; \
      printf '  "glib": "$(glib_VERSION)",\n'; \
-     printf '  "gsf": "$(libgsf_VERSION)",\n'; \
      printf '  "harfbuzz": "$(harfbuzz_VERSION)",\n'; \
      printf '  "heif": "$(libheif_VERSION)",\n'; \
-     printf '  "highway": "$(highway_VERSION)",\n'; \
      printf '  "imagequant": "$(libimagequant_VERSION)",\n'; \
      $(if $(IS_MOZJPEG),,printf '  "jpeg": "$(libjpeg-turbo_VERSION)"$(comma)\n';) \
      printf '  "lcms": "$(lcms_VERSION)",\n'; \
@@ -63,43 +59,28 @@ endef
 define $(PKG)_BUILD
     $($(PKG)_PRE_CONFIGURE)
 
-    # Always build as shared library, we need
-    # libvips-42.dll for the language bindings.
-    cd '$(BUILD_DIR)' && $(SOURCE_DIR)/configure \
-        --host='$(TARGET)' \
-        --build='$(BUILD)' \
-        --prefix='$(PREFIX)/$(TARGET)' \
-        --disable-static \
-        --enable-shared \
-        $(MXE_DISABLE_DOC_OPTS) \
-        --enable-debug=no \
-        --without-fftw \
-        --without-magick \
-        --without-openslide \
-        --without-pdfium \
-        --without-cfitsio \
-        --without-OpenEXR \
-        --without-nifti \
-        --without-matio \
-        --without-ppm \
-        --without-analyze \
-        --without-radiance \
-        --disable-introspection \
-        --disable-deprecated \
-        --disable-modules \
-        $(if $(BUILD_STATIC), lt_cv_deplibs_check_method="pass_all")
+    $(MXE_MESON_WRAPPER) \
+        --default-library=shared \
+        -Ddeprecated=false \
+        -Dintrospection=false \
+        -Dmodules=enabled \
+        -Dcfitsio=disabled \
+        -Dfftw=disabled \
+        -Djpeg-xl=disabled \
+        -Dmagick=disabled \
+        -Dmatio=disabled \
+        -Dnifti=disabled \
+        -Dopenexr=disabled \
+        -Dopenslide=disabled \
+        -Dheif-module=$(if $(IS_HEVC),enabled,disabled) \
+        -Dpdfium=disabled \
+        -Dquantizr=disabled \
+        -Dgsf=disabled \
+        -Dppm=false \
+        -Danalyze=false \
+        -Dradiance=false \
+        '$(SOURCE_DIR)' \
+        '$(BUILD_DIR)'
 
-    # libtool should automatically generate a list
-    # of exported symbols, even for "static" builds
-    $(if $(BUILD_STATIC), \
-        $(SED) -i '/^always_export_symbols=/s/=no/=yes/' '$(BUILD_DIR)/libtool')
-
-    # remove -nostdlib from linker commandline options
-    # (i.e. archive_cmds and archive_expsym_cmds)
-    # https://debbugs.gnu.org/cgi/bugreport.cgi?bug=27866
-    $(if $(IS_LLVM), \
-        $(SED) -i '/\-shared /s/ \-nostdlib//' '$(BUILD_DIR)/libtool')
-
-    $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
-    $(MAKE) -C '$(BUILD_DIR)' -j 1 $(INSTALL_STRIP_LIB)
+    $(MXE_NINJA) -C '$(BUILD_DIR)' -j '$(JOBS)' install
 endef

@@ -174,7 +174,7 @@ fi
 
 echo "Copying packaging files"
 
-cp $install_dir/vips-packaging/{ChangeLog,LICENSE,README.md,versions.json} $repackage_dir
+cp $install_dir/vips-packaging/{ChangeLog,README.md,versions.json} $repackage_dir
 
 zipfile=$vips_package-dev-$arch-$deps-$vips_version${vips_patch_version:+.$vips_patch_version}$zip_suffix.zip
 

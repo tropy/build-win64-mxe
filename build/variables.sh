@@ -1,8 +1,8 @@
 # included by all scripts
 
 vips_package=vips
-vips_version=8.14
-vips_patch_version=1
+vips_version=8.13
+vips_patch_version=3
 #vips_pre_version=rc1
 
 if [ -n "$GIT_COMMIT" ]; then
