@@ -25,7 +25,7 @@ OPTIONS:
 
 PKGS:
 	The packages and their dependencies to build,
-	    defaults to 'vips-web'
+	    defaults to 'vips-tropy'
 
 TARGET:
 	The binary target,
@@ -50,7 +50,7 @@ git_commit=""
 git_ref=""
 jpeg_impl="mozjpeg"
 with_ffi_compat=false
-with_hevc=false
+with_hevc=true
 with_debug=false
 with_prebuilt=true
 with_zlib_ng=true
@@ -88,7 +88,7 @@ set -- "${POSITIONAL[@]}"
 pkgs=("$@")
 
 if [ ${#pkgs[@]} -eq 0 ]; then
-  pkgs=(vips-web)
+  pkgs=(vips-tropy)
 fi
 
 # Note: GTK apps depends on vips-all
