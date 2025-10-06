@@ -16,9 +16,8 @@ define $(PKG)_BUILD
         -DENABLE_PLUGIN_LOADING=0 \
         -DBUILD_TESTING=0 \
         -DWITH_EXAMPLES=0 \
-        $(if $(IS_HEVC),, \
-            -DWITH_LIBDE265=0 \
-            -DWITH_X265=0) \
+        $(if $(IS_HEVC),, -DWITH_LIBDE265=0) \
+				-DWITH_X265=0 \
         $(if $(and $(IS_JPEGLI),$(BUILD_STATIC)), -DCMAKE_CXX_FLAGS='$(CXXFLAGS) -DHAVE_JPEG_WRITE_ICC_PROFILE') \
         '$(SOURCE_DIR)'
     $(MAKE) -C '$(BUILD_DIR)' -j '$(JOBS)'
