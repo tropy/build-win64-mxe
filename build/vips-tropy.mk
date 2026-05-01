@@ -2,14 +2,14 @@ PKG             := vips-tropy
 $(PKG)_WEBSITE  := https://libvips.github.io/libvips/
 $(PKG)_DESCR    := A fast image processing library with low memory needs.
 $(PKG)_IGNORE   :=
-$(PKG)_VERSION  := 8.17.3
-$(PKG)_CHECKSUM := 41e9a1439cd57dcc6d4435a085e2cfe181d9da1962fa84a484f09e8b536e4b77
+$(PKG)_VERSION  := 8.18.2
+$(PKG)_CHECKSUM := a30d4aede16f1c2899c1a2241870f8a7409feafa38484bcdcdac113d6d6f8ff5
 $(PKG)_PATCHES  := $(realpath $(sort $(wildcard $(dir $(lastword $(MAKEFILE_LIST)))/patches/vips-[0-9]*.patch)))
 $(PKG)_GH_CONF  := libvips/libvips/releases,v,,,,.tar.xz
 $(PKG)_SUBDIR   := vips-$($(PKG)_VERSION)
 $(PKG)_FILE     := vips-$($(PKG)_VERSION).tar.xz
 $(PKG)_DEPS     := cc meson-wrapper libwebp librsvg glib pango libarchive \
-                   libjpeg-turbo tiff lcms libexif libheif libspng \
+                   libjpeg-turbo tiff lcms libraw libexif libheif libspng \
                    libimagequant highway poppler cgif
 
 define $(PKG)_PRE_CONFIGURE
@@ -41,6 +41,7 @@ define $(PKG)_PRE_CONFIGURE
           printf '  "jpegli": "$(jpegli_VERSION)"$(comma)\n';, \
           $(if $(IS_MOZJPEG),,printf '  "jpeg": "$(libjpeg-turbo_VERSION)"$(comma)\n';)) \
      printf '  "lcms": "$(lcms_VERSION)",\n'; \
+     printf '  "libraw": "$(libraw_VERSION)",\n'; \
      $(if $(IS_MOZJPEG),printf '  "mozjpeg": "$(mozjpeg_VERSION)"$(comma)\n';) \
      printf '  "openjpeg": "$(openjpeg_VERSION)",\n'; \
      printf '  "pango": "$(pango_VERSION)",\n'; \
@@ -51,7 +52,7 @@ define $(PKG)_PRE_CONFIGURE
      printf '  "rsvg": "$(librsvg_VERSION)",\n'; \
      printf '  "spng": "$(libspng_VERSION)",\n'; \
      printf '  "tiff": "$(tiff_VERSION)",\n'; \
-     printf '  "vips": "$(vips-all_VERSION)",\n'; \
+     printf '  "vips": "$(vips-tropy_VERSION)",\n'; \
      printf '  "webp": "$(libwebp_VERSION)",\n'; \
      printf '  "xml2": "$(libxml2_VERSION)",\n'; \
      $(if $(IS_ZLIB_NG), \
@@ -88,6 +89,7 @@ define $(PKG)_BUILD
         -Dpdfium=disabled \
         -Dpoppler=enabled \
         -Dquantizr=disabled \
+        -Draw=enabled \
         -Dppm=false \
         -Danalyze=false \
         -Dradiance=false \
