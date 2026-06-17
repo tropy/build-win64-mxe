@@ -13,8 +13,9 @@ OPTIONS:
 
 DEPS:
 	The group of dependencies with which libvips was built,
-	    defaults to 'web'
+	    defaults to 'tropy'
 	Possible values are:
+	    - tropy
 	    - web
 	    - all
 
@@ -34,7 +35,7 @@ fi
 
 . variables.sh
 
-deps="${1:-web}"
+deps="${1:-tropy}"
 target="${2:-x86_64-w64-mingw32.shared}"
 arch="${target%%-*}"
 type="${target#*.}"
@@ -94,17 +95,17 @@ if [ "$FFI_COMPAT" = true ]; then
   zip_suffix+="-ffi"
 fi
 
-if [ "$HEVC" = true ]; then
-  zip_suffix+="-hevc"
-fi
+# if [ "$HEVC" = true ]; then
+#   zip_suffix+="-hevc"
+# fi
 
 if [ "$DEBUG" = true ]; then
   zip_suffix+="-debug"
 fi
 
-if [ "$JPEG_IMPL" != "mozjpeg" ]; then
-  zip_suffix+="-$JPEG_IMPL"
-fi
+# if [ "$JPEG_IMPL" != "mozjpeg" ]; then
+#   zip_suffix+="-$JPEG_IMPL"
+# fi
 
 if [ "$ZLIB_NG" = false ]; then
   zip_suffix+="-zlib-vanilla"

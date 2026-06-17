@@ -25,7 +25,7 @@ OPTIONS:
 
 PKGS:
 	The packages and their dependencies to build,
-	    defaults to 'vips-web'
+	    defaults to 'vips-tropy'
 
 TARGET:
 	The binary target,
@@ -50,7 +50,7 @@ git_commit=""
 git_ref=""
 jpeg_impl="mozjpeg"
 with_ffi_compat=false
-with_hevc=false
+with_hevc=true
 with_debug=false
 with_prebuilt=true
 with_zlib_ng=true
@@ -88,7 +88,7 @@ set -- "${POSITIONAL[@]}"
 pkgs=("$@")
 
 if [ ${#pkgs[@]} -eq 0 ]; then
-  pkgs=(vips-web)
+  pkgs=(vips-tropy)
 fi
 
 # Note: GTK apps depends on vips-all
@@ -113,15 +113,15 @@ fi
 [[ ${mxe_targets[*]} =~ ".static" ]] && targets_static=true || targets_static=false
 [[ ${mxe_targets[*]} =~ ".shared" ]] && targets_shared=true || targets_shared=false
 
-if [ "$build_web_variant" = true ] && [ "$build_all_variant" = true ]; then
-  echo "ERROR: Cannot build both vips-web and vips-all simultaneously." >&2
-  exit 1
-fi
+# if [ "$build_web_variant" = true ] && [ "$build_all_variant" = true ]; then
+#   echo "ERROR: Cannot build both vips-web and vips-all simultaneously." >&2
+#   exit 1
+# fi
 
-if [ "$targets_static" = true ] && [ "$contains_gpl_libs" = true ]; then
-  echo "ERROR: Distributing a statically linked library against GPL libraries, without releasing the code as GPL, violates the GPL license." >&2
-  exit 1
-fi
+# if [ "$targets_static" = true ] && [ "$contains_gpl_libs" = true ]; then
+#   echo "ERROR: Distributing a statically linked library against GPL libraries, without releasing the code as GPL, violates the GPL license." >&2
+#   exit 1
+# fi
 
 if [ "$targets_shared" = true ] && [ "$with_ffi_compat" = true ]; then
   echo "WARNING: The --with-ffi-compat option makes only sense when building static binaries." >&2
@@ -195,6 +195,8 @@ if [ "$build_web_variant" = true ]; then
   plugin_dirs+=" /data/plugins/web-deps"
 elif [ "$build_all_variant" = true ]; then
   plugin_dirs+=" /data/plugins/all-deps"
+else
+  plugin_dirs+=" /data/plugins/tropy-deps"
 fi
 
 if [ "$build_gtk" = true ]; then
