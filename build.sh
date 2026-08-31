@@ -195,6 +195,8 @@ if [ "$build_web_variant" = true ]; then
   plugin_dirs+=" /data/plugins/web-deps"
 elif [ "$build_all_variant" = true ]; then
   plugin_dirs+=" /data/plugins/all-deps"
+elif [[ ${pkgs[*]} =~ "vips-tropy" ]]; then
+  plugin_dirs+=" /data/plugins/tropy-deps"
 fi
 
 if [ "$build_gtk" = true ]; then

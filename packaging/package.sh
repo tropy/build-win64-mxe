@@ -4,7 +4,7 @@
 set -e
 
 for pkg in $PKGS; do
-  if [ "$pkg" = "vips-web" ] || [ "$pkg" = "vips-all" ]; then
+  if [ "$pkg" = "vips-web" ] || [ "$pkg" = "vips-all" ] || [ "$pkg" = "vips-tropy" ]; then
     for target in $MXE_TARGETS; do
       ./package-vips.sh ${pkg/#vips-} $target
     done
