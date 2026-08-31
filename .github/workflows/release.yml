@@ -1,0 +1,99 @@
+name: Release Tropy binaries
+
+# Builds the 'vips-tropy' variant for the targets consumed by
+# tropy/sharp-libvips and attaches the zips to a draft release tagged
+# v<libvips version>. Publish the draft by hand once the artifacts look right.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prebuilt:
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      vips: ${{ steps.vips.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read the libvips version
+        id: vips
+        run: |
+          version=$(awk -F':= *' '/^\$\(PKG\)_VERSION/ { print $2 }' build/vips.mk)
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-w64-mingw32.shared
+            arch: x64
+          - target: aarch64-w64-mingw32.shared
+            arch: arm64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Use Docker as the container runtime
+        run: sudo rm -f /usr/bin/podman
+
+      - name: Build libvips ${{ needs.version.outputs.vips }} for ${{ matrix.target }}
+        env:
+          PREBUILT: ${{ inputs.prebuilt }}
+        run: |
+          args=(--with-hevc -t '${{ matrix.target }}' vips-tropy)
+          [ "$PREBUILT" = "true" ] || args=(--without-prebuilt "${args[@]}")
+          ./build.sh "${args[@]}"
+
+      - name: Upload the zip
+        uses: actions/upload-artifact@v5
+        with:
+          name: vips-dev-${{ matrix.arch }}
+          path: packaging/vips-dev-*.zip
+          if-no-files-found: error
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the zips
+        uses: actions/download-artifact@v6
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.vips }}
+        run: |
+          ls -l dist
+          gh release create "v$VERSION" dist/*.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "v$VERSION" \
+            --notes "libvips $VERSION for Tropy. See \`build/plugins/tropy-deps\` for the enabled loaders." \
+            --draft
